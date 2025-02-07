@@ -12,6 +12,9 @@ from PIL import Image
 import numpy as np
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 
 class DocumentType(Enum):
     BOOK = "book"
@@ -62,6 +65,8 @@ class PDFProcessor:
         print("Initializing PDFProcessor...")
         self.pdf_dir = Path(pdf_dir)
         self.metadata_file = Path(metadata_file)
+        self.max_workers = max(1, multiprocessing.cpu_count() - 2)
+        print(f"Using {self.max_workers} workers for OCR")
         if not self.pdf_dir.exists():
             self.pdf_dir.mkdir(parents=True)
         self.metadata_store = self._load_metadata_store()
@@ -119,29 +124,38 @@ class PDFProcessor:
             print(f"Error in convert_pdf_to_images: {str(e)}")
             raise
 
+    def _process_image_ocr(self, img: Image.Image) -> str:
+        """Process a single image with OCR"""
+        try:
+            img_array = np.array(img)
+            text = pytesseract.image_to_string(img_array, lang='eng')
+            return text.strip()
+        except Exception as e:
+            print(f"Error in OCR processing: {str(e)}")
+            return ""
+
     def perform_ocr(self, images: List[Image.Image]) -> str:
-        """Perform OCR on list of images and return combined text"""
-        print("\nStarting OCR process...")
+        """Perform parallel OCR on list of images and return combined text"""
+        print("\nStarting parallel OCR process...")
         text_chunks = []
         
         try:
-            for i, img in enumerate(images, 1):
-                print(f"OCR processing image {i}/{len(images)}")
-                img_array = np.array(img)
-                print(f"Image shape: {img_array.shape}")
+            # Create a process pool for parallel OCR
+            with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
+                # Process images in parallel
+                print(f"Processing {len(images)} images with {self.max_workers} workers")
+                results = list(executor.map(self._process_image_ocr, images))
                 
-                text = pytesseract.image_to_string(img_array, lang='eng')
-                print(f"OCR completed for image {i}. Text length: {len(text)}")
-                
-                if text.strip():
-                    text_chunks.append(text)
-                    print(f"Added text chunk. Current chunks: {len(text_chunks)}")
+                # Filter and collect results
+                text_chunks = [text for text in results if text]
+                print(f"Successfully processed {len(text_chunks)} images")
                 
             result = "\n".join(text_chunks)
             print(f"OCR complete. Total text length: {len(result)}")
             return result
+            
         except Exception as e:
-            print(f"Error in perform_ocr: {str(e)}")
+            print(f"Error in parallel OCR: {str(e)}")
             raise
 
     def determine_document_type(self, ocr_text: str) -> DocumentType:

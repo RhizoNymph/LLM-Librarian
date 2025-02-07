@@ -1,24 +1,24 @@
 {
   "version": "1.0",
-  "last_updated": "2025-02-07T06:37:58.071484",
+  "last_updated": "2025-02-07T06:32:35.639425",
   "documents": {
     "546b28e9f080d7545b921ba212e6ca72e99e0a2bda04d0ff2a6f075ca2e092c6": {
-      "title": "MATRIX FACTORIZATION TECHNIQUES FOR RECOMMENDER SYSTEMS",
+      "title": "Matrix Factorization Techniques for Recommender Systems",
       "authors": [
         "Robert Bell",
         "Chris Volinsky",
         "Yehuda Koren"
       ],
-      "abstract": "The paper discusses how matrix factorization models are superior to classic nearest-neighbor techniques for producing product recommendations. These models allow the incorporation of additional information such as implicit feedback, temporal effects, and confidence levels into the recommendation systems, enhancing user satisfaction.",
+      "abstract": "Matrix factorization models are superior to classic nearest-neighbor techniques for producing product recommendations, allowing the incorporation of additional information such as implicit feedback, temporal effects, and confidence levels.",
       "keywords": [
-        "Recommender Systems",
-        "Matrix Factorization",
-        "Temporal Dynamics",
-        "Implicit Feedback",
-        "Nearest-neighbor Techniques"
+        "Matrix factorization",
+        "Recommender systems",
+        "Implicit feedback",
+        "Temporal effects",
+        "Confidence levels"
       ],
       "doi": null,
-      "journal": "COMPUTER",
+      "journal": "IEEE Computer Society",
       "conference": null,
       "publication_year": 2009,
       "institution": "AT&T Labs—Research, Yahoo Research",
@@ -31,28 +31,28 @@
         "O. Al-Ghattas"
       ],
       "publisher": "University of Chicago",
-      "publication_year": 2024,
+      "publication_year": null,
       "isbn": null,
       "edition": null,
       "language": null,
       "subject_areas": [
         "Monte Carlo Methods",
-        "Mathematical Statistics",
-        "Computational Mathematics",
-        "Applied Mathematics"
+        "Mathematics",
+        "Statistics",
+        "Algorithm"
       ],
       "table_of_contents": [
         "Preface",
-        "Introduction",
-        "Transformation and Accept/Reject Sampling Methods",
-        "Monte Carlo Integration and Importance Sampling",
-        "Metropolis Hastings",
-        "Gibbs Sampling",
-        "Langevin Monte Carlo",
-        "Annealing Strategies",
-        "Hamiltonian Monte Carlo",
-        "Sequential Monte Carlo",
-        "Variational Inference and Expectation Maximization"
+        "1 Introduction",
+        "2 Transformation and Accept/Reject Sampling Methods",
+        "3 Monte Carlo Integration and Importance Sampling",
+        "4 Metropolis Hastings",
+        "5 Gibbs Sampling",
+        "6 Langevin Monte Carlo",
+        "7 Annealing Strategies",
+        "8 Hamiltonian Monte Carlo",
+        "9 Sequential Monte Carlo",
+        "10 Variational Inference and Expectation Maximization"
       ]
     },
     "d1228fdf6f9a1aef0d3f80572612da011d928705d709464f73d0e1a9c9d356d0": {
@@ -60,13 +60,13 @@
       "authors": [
         "John Green"
       ],
-      "publisher": "Dutton",
+      "publisher": "DUTTON",
       "publication_year": 2021,
       "isbn": "9780525555216",
       "edition": null,
       "language": "English",
       "subject_areas": [
-        "Anthropocene",
+        "Essays",
         "Human-Centered Planet"
       ],
       "table_of_contents": [
@@ -114,7 +114,7 @@
         "The World’s Largest Ball of Paint",
         "Sycamore Trees",
         "\"New Partner\"",
-        "Three Farmers on Their Way to a Dance",
+        "Three Farmers on Their Way_to a Dance",
         "Postscript",
         "Notes"
       ]

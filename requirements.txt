@@ -1,0 +1,6 @@
+pydantic-ai
+PyMuPDF
+pytesseract
+Pillow
+numpy
+rich 

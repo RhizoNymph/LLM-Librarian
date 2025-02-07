@@ -1,0 +1,15 @@
+[project]
+name = "librarian-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.2.2",
+    "opencv-python>=4.11.0.86",
+    "pillow>=11.1.0",
+    "pydantic-ai>=0.0.22",
+    "pymupdf>=1.25.3",
+    "pytesseract>=0.3.13",
+    "rich>=13.9.4",
+]

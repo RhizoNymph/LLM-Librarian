@@ -19,6 +19,12 @@ from functools import partial
 class DocumentType(Enum):
     BOOK = "book"
     PAPER = "paper"
+    BLOG_ARTICLE = "blog_article"
+    TECHNICAL_REPORT = "technical_report"
+    THESIS = "thesis"
+    PRESENTATION = "presentation"
+    DOCUMENTATION = "documentation"
+    PATENT = "patent"
 
 class BookMetadata(BaseModel):
     """Metadata schema for books"""
@@ -45,6 +51,53 @@ class PaperMetadata(BaseModel):
     institution: Optional[str] = Field(description="Research institution(s)")
     citations: Optional[List[str]] = Field(description="Key citations from first page")
 
+class BlogArticleMetadata(BaseModel):
+    """Metadata schema for blog articles"""
+    title: str = Field(description="The full title of the article")
+    authors: List[str] = Field(description="List of author names")
+    publication_date: Optional[datetime] = Field(description="Publication date")
+    blog_name: Optional[str] = Field(description="Name of the blog or platform")
+    url: Optional[str] = Field(description="Original URL if available")
+    tags: List[str] = Field(description="Article tags or categories")
+    reading_time: Optional[int] = Field(description="Estimated reading time in minutes")
+    summary: str = Field(description="Article summary or introduction")
+    series: Optional[str] = Field(description="Blog post series name if part of one")
+
+class TechnicalReportMetadata(BaseModel):
+    """Metadata schema for technical reports"""
+    title: str = Field(description="Report title")
+    authors: List[str] = Field(description="List of authors")
+    organization: str = Field(description="Organization that produced the report")
+    report_number: Optional[str] = Field(description="Report identifier/number")
+    date: Optional[datetime] = Field(description="Publication date")
+    executive_summary: Optional[str] = Field(description="Executive summary")
+    keywords: List[str] = Field(description="Key terms")
+    classification: Optional[str] = Field(description="Report classification (e.g., Internal, Public)")
+
+class ThesisMetadata(BaseModel):
+    """Metadata schema for theses and dissertations"""
+    title: str = Field(description="Thesis title")
+    author: str = Field(description="Author name")
+    degree: str = Field(description="Degree type (e.g., PhD, Masters)")
+    institution: str = Field(description="Academic institution")
+    department: Optional[str] = Field(description="Department or faculty")
+    year: int = Field(description="Year of submission")
+    advisors: List[str] = Field(description="Thesis advisors/supervisors")
+    abstract: str = Field(description="Thesis abstract")
+    keywords: List[str] = Field(description="Key terms")
+
+class PatentMetadata(BaseModel):
+    """Metadata schema for patents"""
+    title: str = Field(description="Patent title")
+    inventors: List[str] = Field(description="List of inventors")
+    assignee: Optional[str] = Field(description="Patent assignee/owner")
+    patent_number: Optional[str] = Field(description="Patent number")
+    filing_date: Optional[datetime] = Field(description="Filing date")
+    publication_date: Optional[datetime] = Field(description="Publication date")
+    abstract: str = Field(description="Patent abstract")
+    classification: Optional[str] = Field(description="Patent classification")
+    claims: Optional[List[str]] = Field(description="Main patent claims")
+
 @dataclass
 class PDFContext:
     pdf_path: Path
@@ -55,7 +108,7 @@ class MetadataStore(BaseModel):
     """Container for all document metadata"""
     version: str = "1.0"
     last_updated: datetime = Field(default_factory=datetime.utcnow)
-    documents: Dict[str, Union[BookMetadata, PaperMetadata]] = Field(
+    documents: Dict[str, Union[BookMetadata, PaperMetadata, BlogArticleMetadata, TechnicalReportMetadata, ThesisMetadata, PatentMetadata]] = Field(
         default_factory=dict,
         description="Dictionary of document metadata keyed by file hash"
     )
@@ -170,18 +223,36 @@ class PDFProcessor:
             raise
 
     def determine_document_type(self, ocr_text: str) -> DocumentType:
-        """Determine if document is a book or paper based on OCR text"""
-        # Simple heuristic - can be improved
-        paper_indicators = ["abstract", "doi:", "journal", "conference"]
-        for indicator in paper_indicators:
-            if indicator.lower() in ocr_text.lower():
-                return DocumentType.PAPER
+        """Determine document type based on OCR text and structure"""
+        text_lower = ocr_text.lower()
+        
+        # Patent indicators
+        if any(x in text_lower for x in ["patent", "claims:", "inventors:", "assignee:"]):
+            return DocumentType.PATENT
+        
+        # Thesis indicators
+        if any(x in text_lower for x in ["thesis", "dissertation", "submitted in partial fulfillment"]):
+            return DocumentType.THESIS
+        
+        # Technical report indicators
+        if any(x in text_lower for x in ["technical report", "tr-", "executive summary"]):
+            return DocumentType.TECHNICAL_REPORT
+        
+        # Blog article indicators
+        if any(x in text_lower for x in ["posted on", "reading time:", "originally published at"]):
+            return DocumentType.BLOG_ARTICLE
+        
+        # Academic paper indicators
+        if any(x in text_lower for x in ["abstract", "doi:", "journal", "conference"]):
+            return DocumentType.PAPER
+        
+        # Book indicators (default if no other type matches)
         return DocumentType.BOOK
 
 metadata_agent = Agent(
     'openai:gpt-4',
     deps_type=PDFContext,
-    result_type=BookMetadata | PaperMetadata,
+    result_type=BookMetadata | PaperMetadata | BlogArticleMetadata | TechnicalReportMetadata | ThesisMetadata | PatentMetadata,
     system_prompt="""
     You are a metadata extraction specialist. Analyze the OCR text from the first 10 pages 
     of a PDF document and extract relevant metadata based on the document type (book or paper).

@@ -102,22 +102,33 @@ class PDFProcessor:
         """Check if file has already been processed"""
         return file_hash in self.metadata_store.documents
 
-    def convert_pdf_to_images(self, pdf_path: Path, max_pages: int = 10) -> List[Image.Image]:
+    def convert_pdf_to_images(self, pdf_path: Path, max_pages: int = 10, extended_search: bool = False) -> List[Image.Image]:
         """Convert PDF pages to PIL Images"""
         print(f"\nStarting PDF conversion for: {pdf_path}")
         try:
-            doc = fitz.open(str(pdf_path))  # Convert Path to string explicitly
+            doc = fitz.open(str(pdf_path))
             print(f"PDF opened successfully. Total pages: {len(doc)}")
             images = []
             
-            for page_num in range(min(max_pages, len(doc))):
-                print(f"Converting page {page_num + 1}/{min(max_pages, len(doc))}")
+            # If extended_search is True, look at more pages for specific content
+            if extended_search:
+                # Look at first 10 pages for main metadata
+                main_pages = list(range(min(10, len(doc))))
+                # Look at references/bibliography pages near the end
+                end_pages = list(range(max(0, len(doc)-5), len(doc)))
+                # Look at some middle pages for content analysis
+                middle_pages = list(range(10, min(20, len(doc))))
+                pages_to_process = sorted(set(main_pages + middle_pages + end_pages))
+            else:
+                pages_to_process = range(min(max_pages, len(doc)))
+            
+            for page_num in pages_to_process:
+                print(f"Converting page {page_num + 1}")
                 page = doc[page_num]
                 pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-                print(f"Pixmap created: {pix.width}x{pix.height}")
                 img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
                 images.append(img)
-                
+            
             print(f"Successfully converted {len(images)} pages")
             return images
         except Exception as e:

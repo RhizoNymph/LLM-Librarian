@@ -1,9 +1,9 @@
 {
   "version": "1.0",
-  "last_updated": "2025-02-07T06:45:36.255914",
+  "last_updated": "2025-02-07T06:53:00.325451",
   "documents": {
     "546b28e9f080d7545b921ba212e6ca72e99e0a2bda04d0ff2a6f075ca2e092c6": {
-      "title": "MATRIX FACTORIZATION TECHNIQUES FOR RECOMMENDER SYSTEMS",
+      "title": "Matrix Factorization Techniques for Recommender Systems",
       "authors": [
         "Robert Bell",
         "Chris Volinsky",
@@ -13,13 +13,12 @@
       "keywords": [
         "Matrix Factorization",
         "Recommender Systems",
-        "Implicit Feedback",
-        "Temporal Effects",
-        "Confidence Levels",
-        "Netflix"
+        "Netflix Prize",
+        "Collaborative Filtering",
+        "Temporal Dynamics"
       ],
       "doi": null,
-      "journal": "COMPUTER",
+      "journal": "IEEE Computer Society",
       "conference": null,
       "publication_year": 2009,
       "institution": "AT&T Labs—Research, Yahoo Research",
@@ -39,9 +38,7 @@
       "subject_areas": [
         "Mathematics",
         "Statistics",
-        "Computational Mathematics",
-        "Applied Mathematics",
-        "Stochastic Simulation"
+        "Monte Carlo Methods"
       ],
       "table_of_contents": [
         "Introduction",
@@ -61,15 +58,12 @@
       "authors": [
         "John Green"
       ],
-      "publisher": "DUTTON",
+      "publisher": "Dutton",
       "publication_year": 2021,
       "isbn": "9780525555216",
       "edition": null,
-      "language": "English",
-      "subject_areas": [
-        "Essays",
-        "Human-Centered Planet"
-      ],
+      "language": null,
+      "subject_areas": [],
       "table_of_contents": [
         "Introduction",
         "You'll Never Walk Alone",
@@ -114,7 +108,7 @@
         "The QWERTY Keyboard",
         "The World’s Largest Ball of Paint",
         "Sycamore Trees",
-        "New Partner",
+        "“New Partner”",
         "Three Farmers on Their Way_to a Dance",
         "Postscript",
         "Notes"

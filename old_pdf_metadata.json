@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "last_updated": "2025-02-07T06:37:58.071484",
+  "last_updated": "2025-02-07T06:45:36.255914",
   "documents": {
     "546b28e9f080d7545b921ba212e6ca72e99e0a2bda04d0ff2a6f075ca2e092c6": {
       "title": "MATRIX FACTORIZATION TECHNIQUES FOR RECOMMENDER SYSTEMS",
@@ -9,13 +9,14 @@
         "Chris Volinsky",
         "Yehuda Koren"
       ],
-      "abstract": "The paper discusses how matrix factorization models are superior to classic nearest-neighbor techniques for producing product recommendations. These models allow the incorporation of additional information such as implicit feedback, temporal effects, and confidence levels into the recommendation systems, enhancing user satisfaction.",
+      "abstract": "As the Netflix Prize competition has demonstrated, matrix factorization models are superior to classic nearest-neighbor techniques for producing product recommendations, allowing the incorporation of additional information such as implicit feedback, temporal effects, and confidence levels.",
       "keywords": [
-        "Recommender Systems",
         "Matrix Factorization",
-        "Temporal Dynamics",
+        "Recommender Systems",
         "Implicit Feedback",
-        "Nearest-neighbor Techniques"
+        "Temporal Effects",
+        "Confidence Levels",
+        "Netflix"
       ],
       "doi": null,
       "journal": "COMPUTER",
@@ -34,15 +35,15 @@
       "publication_year": 2024,
       "isbn": null,
       "edition": null,
-      "language": null,
+      "language": "English",
       "subject_areas": [
-        "Monte Carlo Methods",
-        "Mathematical Statistics",
+        "Mathematics",
+        "Statistics",
         "Computational Mathematics",
-        "Applied Mathematics"
+        "Applied Mathematics",
+        "Stochastic Simulation"
       ],
       "table_of_contents": [
-        "Preface",
         "Introduction",
         "Transformation and Accept/Reject Sampling Methods",
         "Monte Carlo Integration and Importance Sampling",
@@ -60,18 +61,18 @@
       "authors": [
         "John Green"
       ],
-      "publisher": "Dutton",
+      "publisher": "DUTTON",
       "publication_year": 2021,
       "isbn": "9780525555216",
       "edition": null,
       "language": "English",
       "subject_areas": [
-        "Anthropocene",
+        "Essays",
         "Human-Centered Planet"
       ],
       "table_of_contents": [
         "Introduction",
-        "\"You'll Never Walk Alone\"",
+        "You'll Never Walk Alone",
         "Humanity’s Temporal Range",
         "Halley’s Comet",
         "Our Capacity for Wonder",
@@ -92,7 +93,7 @@
         "Piggly Wiggly",
         "The Nathan’s Famous Hot Dog Eating Contest",
         "CNN",
-        "Harvey",
+        "Harvey,",
         "The Yips",
         "Auld Lang Syne",
         "Googling Strangers",
@@ -113,8 +114,8 @@
         "The QWERTY Keyboard",
         "The World’s Largest Ball of Paint",
         "Sycamore Trees",
-        "\"New Partner\"",
-        "Three Farmers on Their Way to a Dance",
+        "New Partner",
+        "Three Farmers on Their Way_to a Dance",
         "Postscript",
         "Notes"
       ]

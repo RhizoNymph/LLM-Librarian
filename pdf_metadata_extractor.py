@@ -113,6 +113,10 @@ class MetadataStore(BaseModel):
         description="Dictionary of document metadata keyed by file hash"
     )
 
+    def get_by_hash(self, file_hash: str):
+        """Get metadata for a file by its hash"""
+        return self.documents.get(file_hash)
+
 class PDFProcessor:
     def __init__(self, pdf_dir: str = "./pdfs", metadata_file: str = "./pdf_metadata.json"):
         print("Initializing PDFProcessor...")
@@ -250,7 +254,7 @@ class PDFProcessor:
         return DocumentType.BOOK
 
 metadata_agent = Agent(
-    'openai:gpt-4',
+    'google-gla:gemini-2.0-flash',
     deps_type=PDFContext,
     result_type=BookMetadata | PaperMetadata | BlogArticleMetadata | TechnicalReportMetadata | ThesisMetadata | PatentMetadata,
     system_prompt="""

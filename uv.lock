@@ -164,6 +164,14 @@ wheels = [
 ]
 
 [[package]]
+name = "events"
+version = "0.5"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/25/ed/e47dec0626edd468c84c04d97769e7ab4ea6457b7f54dcb3f72b17fcd876/Events-0.5-py3-none-any.whl", hash = "sha256:a7286af378ba3e46640ac9825156c93bdba7502174dd696090fdfcd4d80a1abd", size = 6758 },
+]
+
+[[package]]
 name = "fastavro"
 version = "1.10.0"
 source = { registry = "https://pypi.org/simple" }
@@ -386,10 +394,12 @@ source = { virtual = "." }
 dependencies = [
     { name = "numpy" },
     { name = "opencv-python" },
+    { name = "opensearch-py" },
     { name = "pillow" },
     { name = "pydantic-ai" },
     { name = "pymupdf" },
     { name = "pytesseract" },
+    { name = "python-dotenv" },
     { name = "rich" },
 ]
 
@@ -397,10 +407,12 @@ dependencies = [
 requires-dist = [
     { name = "numpy", specifier = ">=2.2.2" },
     { name = "opencv-python", specifier = ">=4.11.0.86" },
+    { name = "opensearch-py", specifier = ">=2.8.0" },
     { name = "pillow", specifier = ">=11.1.0" },
     { name = "pydantic-ai", specifier = ">=0.0.22" },
     { name = "pymupdf", specifier = ">=1.25.3" },
     { name = "pytesseract", specifier = ">=0.3.13" },
+    { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "rich", specifier = ">=13.9.4" },
 ]
 
@@ -545,6 +557,22 @@ wheels = [
 ]
 
 [[package]]
+name = "opensearch-py"
+version = "2.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "certifi" },
+    { name = "events" },
+    { name = "python-dateutil" },
+    { name = "requests" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7c/e4/192c97ca676c81f69e138a22e10fb03f64e14a55633cb2acffb41bf6d061/opensearch_py-2.8.0.tar.gz", hash = "sha256:6598df0bc7a003294edd0ba88a331e0793acbb8c910c43edf398791e3b2eccda", size = 237923 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/23/35/a957c6fb88ff6874996be688448b889475cf0ea978446cd5a30e764e0561/opensearch_py-2.8.0-py3-none-any.whl", hash = "sha256:52c60fdb5d4dcf6cce3ee746c13b194529b0161e0f41268b98ab8f1624abe2fa", size = 353492 },
+]
+
+[[package]]
 name = "packaging"
 version = "24.2"
 source = { registry = "https://pypi.org/simple" }
@@ -639,19 +667,19 @@ wheels = [
 
 [[package]]
 name = "pydantic-ai"
-version = "0.0.22"
+version = "0.0.24"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic-ai-slim", extra = ["anthropic", "cohere", "groq", "mistral", "openai", "vertexai"] },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1e/16/244f7592f5b3ba9dde6d1c5682d3fcf9653ecf2b55800d7ec55919312deb/pydantic_ai-0.0.22.tar.gz", hash = "sha256:121af7542a0e80a4cd84d958e5675cb229215e1b744cbcc45c864f449ffbc56e", size = 70521 }
+sdist = { url = "https://files.pythonhosted.org/packages/10/8a/0a9ff28b5956077f162dec57e96eeb5ea322cb1bba9c85f02d008966e1b4/pydantic_ai-0.0.24.tar.gz", hash = "sha256:7af076cbdb5f4c6ac8fae5273f02b67130b69d1cdaed87a022f79f42449f83a9", size = 71314 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/24/05/efaf3d2670deb61d10ee4bcef551ccf3de42348d3b0df53ee6247127119a/pydantic_ai-0.0.22-py3-none-any.whl", hash = "sha256:dd397bdadc78500c91bcc7667e212c315a990face4630de553022ae6c3d4face", size = 9837 },
+    { url = "https://files.pythonhosted.org/packages/96/94/e7dbc5acf86a24442d21df4b8453a267614c3a6d9cd52ce0c685de2d7d19/pydantic_ai-0.0.24-py3-none-any.whl", hash = "sha256:dc75f01be0218c2f46fe90a3d43ef4700d764bfbe6240fca9c18a4509f6b86cf", size = 9837 },
 ]
 
 [[package]]
 name = "pydantic-ai-slim"
-version = "0.0.22"
+version = "0.0.24"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "eval-type-backport" },
@@ -661,9 +689,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-graph" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7b/1f/be208faabd625fb01ecc6215ebda0bfef6557c15f6b7f656344969cee80b/pydantic_ai_slim-0.0.22.tar.gz", hash = "sha256:529f88c09cf190f583aa5c1bc2c1c84603f563aa8eb7697013e795e2e67c725b", size = 73151 }
+sdist = { url = "https://files.pythonhosted.org/packages/90/05/baff139032ecdb930f00760c652d782934bc63da57c2ecc1c48d4c9b8898/pydantic_ai_slim-0.0.24.tar.gz", hash = "sha256:c82d5ffed6d3a149e64701d0e4cfa09256a8ef9feb296281f908af19050d2bf1", size = 73812 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3c/3a/e080e6007204affcf96ad0aa0a3aca9ec1cdbce2d0ef292097e70b85cd11/pydantic_ai_slim-0.0.22-py3-none-any.whl", hash = "sha256:18e5a60aceae9b62a1db02fe635926099ab7c2263564f3439827f37a1bfa8ea3", size = 93996 },
+    { url = "https://files.pythonhosted.org/packages/af/15/715b629b0386f45345ac8a8e97f0d788ab7f728cd8bbe39f724e4c32773e/pydantic_ai_slim-0.0.24-py3-none-any.whl", hash = "sha256:7cd3aec6df572780323169a6dfa114640f76c2e2b21105efcd5cce2b459c7b17", size = 95271 },
 ]
 
 [package.optional-dependencies]
@@ -742,16 +770,16 @@ wheels = [
 
 [[package]]
 name = "pydantic-graph"
-version = "0.0.22"
+version = "0.0.24"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "logfire-api" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ec/43/c90a7c65e16f0ac05aaaadc12b5e28fe09aeb1826936872cf9ae8d0a758e/pydantic_graph-0.0.22.tar.gz", hash = "sha256:c72baca5c1ac7f5445a52bbe63c25c0d060c6b70b7de956700753b2401f470fe", size = 13697 }
+sdist = { url = "https://files.pythonhosted.org/packages/b9/8f/ad685ecca0f610fa204e92f394d190bcab8c9392f7be8f1a83914244d36b/pydantic_graph-0.0.24.tar.gz", hash = "sha256:40550e2310002f411b1fc0636206222caa5459ede7c44da5c856b3526b3096cd", size = 13694 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/3b/ea04ad0c1ab037fd00130bb59eb2d9e2cf97afe2d6bb65a206b274df9ef6/pydantic_graph-0.0.22-py3-none-any.whl", hash = "sha256:5388f0f877964bc5684c03f5ec91330e096d6f6a1e7fc82ca5cdeffeeeff1038", size = 16860 },
+    { url = "https://files.pythonhosted.org/packages/23/f6/2f4ef49e75fcb6070f440f05db2898612ada7f5d889209e98ede2fdb3d19/pydantic_graph-0.0.24-py3-none-any.whl", hash = "sha256:29d763cb77a2533bcbd07ff34fff36316617d1e62a926a7a15df59f6103fc74e", size = 16860 },
 ]
 
 [[package]]
@@ -800,6 +828,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3", size = 342432 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427", size = 229892 },
+]
+
+[[package]]
+name = "python-dotenv"
+version = "1.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bc/57/e84d88dfe0aec03b7a2d4327012c1627ab5f03652216c63d49846d7a6c58/python-dotenv-1.0.1.tar.gz", hash = "sha256:e324ee90a023d808f1959c46bcbc04446a10ced277783dc6ee09987c37ec10ca", size = 39115 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6a/3e/b68c118422ec867fa7ab88444e1274aa40681c606d59ac27de5a5588f082/python_dotenv-1.0.1-py3-none-any.whl", hash = "sha256:f7b63ef50f1b690dddf550d03497b66d609393b40b564ed0d674909a68ebf16a", size = 19863 },
 ]
 
 [[package]]

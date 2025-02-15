@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "last_updated": "2025-02-07T07:24:17.644257",
+  "last_updated": "2025-02-15T20:34:41.634846",
   "documents": {
     "705abab10da25c4a3a05604df7614a8cdea434acca9b579848b28b5e0f5b305b": {
       "title": "A First Course in Monte Carlo Methods",
@@ -95,6 +95,28 @@
         "Postscript",
         "Notes"
       ]
+    },
+    "546b28e9f080d7545b921ba212e6ca72e99e0a2bda04d0ff2a6f075ca2e092c6": {
+      "title": "MATRIX\nFACTORIZATION\nTECHNIQUES FOR\nRECOMMENDER\nSYSTEMS",
+      "authors": [
+        "Robert Bell",
+        "Chris Volinsky",
+        "Yehuda Koren"
+      ],
+      "abstract": "As the Netflix Prize competition has dem-\nonstrated, matrix factorization models\nare superior to classic nearest-neighbor\ntechniques for producing product recom-\nmendations, allowing the incorporation\nof additional information such as implicit\nfeedback, temporal effects, and confidence\nlevels.",
+      "keywords": [
+        "matrix factorization",
+        "recommender systems",
+        "Netflix Prize",
+        "collaborative filtering",
+        "latent factor models"
+      ],
+      "doi": null,
+      "journal": "COMPUTER",
+      "conference": null,
+      "publication_year": 2009,
+      "institution": "AT&T Labs—Research",
+      "citations": []
     }
   }
 }

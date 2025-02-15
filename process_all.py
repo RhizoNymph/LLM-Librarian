@@ -6,9 +6,10 @@ from rich.console import Console
 from rich.table import Table
 from opensearchpy import OpenSearch, OpenSearchException
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from dotenv import load_dotenv
 import hashlib
+import base64
 
 load_dotenv()
 
@@ -25,6 +26,8 @@ class OpenSearchUploader:
     def __init__(self):
         self.client = None
         self.console = Console()
+        self.chunk_size = 1000  # Approximate characters per chunk
+        self.chunk_overlap = 200  # Characters of overlap between chunks
 
     def connect(self) -> bool:
         """Establish connection to OpenSearch"""
@@ -44,32 +47,94 @@ class OpenSearchUploader:
             self.console.print(f"[red]Failed to connect to OpenSearch: {str(e)}[/red]")
             return False
 
-    async def upload_document(self, metadata, file_hash: str) -> bool:
-        """Upload metadata to OpenSearch"""
+    def create_index_if_not_exists(self):
+        """Create index with appropriate mappings for text search"""
+        if not self.client.indices.exists(index=OPENSEARCH_INDEX):
+            mappings = {
+                "mappings": {
+                    "properties": {
+                        "title": {"type": "text"},
+                        "authors": {"type": "keyword"},
+                        "publication_year": {"type": "integer"},
+                        "file_hash": {"type": "keyword"},
+                        "doc_type": {"type": "keyword"},
+                        "timestamp": {"type": "date"},
+                        "content": {"type": "text"},
+                        "chunk_index": {"type": "integer"},
+                        "total_chunks": {"type": "integer"}
+                    }
+                }
+            }
+            self.client.indices.create(index=OPENSEARCH_INDEX, body=mappings)
+
+    def chunk_text(self, text: str) -> List[str]:
+        """Split text into overlapping chunks"""
+        chunks = []
+        start = 0
+        
+        while start < len(text):
+            # Get chunk of text
+            end = start + self.chunk_size
+            
+            # If this isn't the last chunk, try to break at a period or space
+            if end < len(text):
+                # Look for a period in the last 100 characters of the chunk
+                last_period = text[end-100:end].rfind('.')
+                if last_period != -1:
+                    end = end - (100 - last_period)
+                else:
+                    # If no period, break at last space
+                    last_space = text[end-50:end].rfind(' ')
+                    if last_space != -1:
+                        end = end - (50 - last_space)
+            
+            # Add the chunk
+            chunks.append(text[start:end].strip())
+            
+            # Move start position, including overlap
+            start = end - self.chunk_overlap
+        
+        return chunks
+
+    async def upload_document(self, metadata, file_hash: str, ocr_text: str) -> bool:
+        """Upload metadata and chunked text content to OpenSearch"""
         if not self.client:
             if not self.connect():
                 return False
 
-        document = {
-            'title': metadata.title,
-            'authors': metadata.authors,
-            'publication_year': metadata.publication_year,
-            'file_hash': file_hash,
-            'doc_type': 'Book' if hasattr(metadata, 'isbn') else 'Paper',
-            'timestamp': datetime.now().isoformat(),
-        }
-        
-        if hasattr(metadata, 'isbn'):
-            document['isbn'] = metadata.isbn
-
         try:
-            response = self.client.index(
-                index=OPENSEARCH_INDEX,
-                body=document,
-                id=file_hash,
-                refresh=True
-            )
-            self.console.print(f"[green]Document indexed successfully: {response['result']}[/green]")
+            # Create index with proper mappings if it doesn't exist
+            self.create_index_if_not_exists()
+
+            # Split text into chunks
+            chunks = self.chunk_text(ocr_text)
+            total_chunks = len(chunks)
+
+            # Upload each chunk as a separate document
+            for i, chunk in enumerate(chunks):
+                document = {
+                    'title': metadata.title,
+                    'authors': metadata.authors,
+                    'publication_year': metadata.publication_year,
+                    'file_hash': file_hash,
+                    'doc_type': 'Book' if hasattr(metadata, 'isbn') else 'Paper',
+                    'timestamp': datetime.now().isoformat(),
+                    'content': chunk,
+                    'chunk_index': i,
+                    'total_chunks': total_chunks
+                }
+                
+                if hasattr(metadata, 'isbn'):
+                    document['isbn'] = metadata.isbn
+
+                response = self.client.index(
+                    index=OPENSEARCH_INDEX,
+                    body=document,
+                    id=f"{file_hash}_{i}",
+                    refresh=True
+                )
+
+            self.console.print(f"[green]Document indexed successfully in {total_chunks} chunks[/green]")
             return True
         except OpenSearchException as e:
             self.console.print(f"[red]OpenSearch indexing error: {str(e)}[/red]")
@@ -85,7 +150,7 @@ async def process_single_pdf(pdf_path: Path, uploader: OpenSearchUploader) -> bo
         with open(pdf_path, 'rb') as f:
             file_hash = hashlib.sha256(f.read()).hexdigest()
             
-        # Process the PDF
+        # Process the PDF for metadata
         metadata = await process_pdf(pdf_path)
         if metadata is None:
             # If file was already processed, try to get metadata from PDFProcessor
@@ -94,11 +159,19 @@ async def process_single_pdf(pdf_path: Path, uploader: OpenSearchUploader) -> bo
             if metadata is None:
                 print(f"[red]Could not get metadata for {pdf_path}[/red]")
                 return False
+        
+        # Get OCR text from full document
+        processor = PDFProcessor()
+        print("\nProcessing full document for text extraction...")
+        # Set max_pages to None to process entire document
+        images = processor.convert_pdf_to_images(pdf_path, max_pages=None, extended_search=True)
+        ocr_text = processor.perform_ocr(images)
+        print(f"Extracted {len(ocr_text)} characters of text")
                 
         print(f"Successfully processed {pdf_path}")
             
-        # Upload to OpenSearch
-        success = await uploader.upload_document(metadata, file_hash)
+        # Upload to OpenSearch with OCR text
+        success = await uploader.upload_document(metadata, file_hash, ocr_text)
         return success
             
     except Exception as e:

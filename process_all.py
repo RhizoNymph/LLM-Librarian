@@ -26,8 +26,121 @@ class OpenSearchUploader:
     def __init__(self):
         self.client = None
         self.console = Console()
-        self.chunk_size = 1000  # Approximate characters per chunk
-        self.chunk_overlap = 200  # Characters of overlap between chunks
+        self.chunk_size = 1000
+        self.chunk_overlap = 200
+        self.index_prefix = OPENSEARCH_INDEX
+        
+        # Define mappings for different document types
+        self.mappings = {
+            'book': {
+                "properties": {
+                    "title": {"type": "text"},
+                    "authors": {"type": "keyword"},
+                    "publisher": {"type": "keyword"},
+                    "publication_year": {"type": "integer"},
+                    "isbn": {"type": "keyword"},
+                    "edition": {"type": "keyword"},
+                    "language": {"type": "keyword"},
+                    "subject_areas": {"type": "keyword"},
+                    "table_of_contents": {"type": "text"},
+                    "content": {"type": "text"},
+                    "chunk_index": {"type": "integer"},
+                    "total_chunks": {"type": "integer"},
+                    "file_hash": {"type": "keyword"},
+                    "timestamp": {"type": "date"}
+                }
+            },
+            'paper': {
+                "properties": {
+                    "title": {"type": "text"},
+                    "authors": {"type": "keyword"},
+                    "abstract": {"type": "text"},
+                    "keywords": {"type": "keyword"},
+                    "doi": {"type": "keyword"},
+                    "journal": {"type": "keyword"},
+                    "conference": {"type": "keyword"},
+                    "publication_year": {"type": "integer"},
+                    "institution": {"type": "keyword"},
+                    "citations": {"type": "text"},
+                    "content": {"type": "text"},
+                    "chunk_index": {"type": "integer"},
+                    "total_chunks": {"type": "integer"},
+                    "file_hash": {"type": "keyword"},
+                    "timestamp": {"type": "date"}
+                }
+            },
+            'blog_article': {
+                "properties": {
+                    "title": {"type": "text"},
+                    "authors": {"type": "keyword"},
+                    "publication_date": {"type": "date"},
+                    "blog_name": {"type": "keyword"},
+                    "url": {"type": "keyword"},
+                    "tags": {"type": "keyword"},
+                    "reading_time": {"type": "integer"},
+                    "summary": {"type": "text"},
+                    "series": {"type": "keyword"},
+                    "content": {"type": "text"},
+                    "chunk_index": {"type": "integer"},
+                    "total_chunks": {"type": "integer"},
+                    "file_hash": {"type": "keyword"},
+                    "timestamp": {"type": "date"}
+                }
+            },
+            'technical_report': {
+                "properties": {
+                    "title": {"type": "text"},
+                    "authors": {"type": "keyword"},
+                    "organization": {"type": "keyword"},
+                    "report_number": {"type": "keyword"},
+                    "date": {"type": "date"},
+                    "executive_summary": {"type": "text"},
+                    "keywords": {"type": "keyword"},
+                    "classification": {"type": "keyword"},
+                    "content": {"type": "text"},
+                    "chunk_index": {"type": "integer"},
+                    "total_chunks": {"type": "integer"},
+                    "file_hash": {"type": "keyword"},
+                    "timestamp": {"type": "date"}
+                }
+            },
+            'thesis': {
+                "properties": {
+                    "title": {"type": "text"},
+                    "author": {"type": "keyword"},
+                    "degree": {"type": "keyword"},
+                    "institution": {"type": "keyword"},
+                    "department": {"type": "keyword"},
+                    "year": {"type": "integer"},
+                    "advisors": {"type": "keyword"},
+                    "abstract": {"type": "text"},
+                    "keywords": {"type": "keyword"},
+                    "content": {"type": "text"},
+                    "chunk_index": {"type": "integer"},
+                    "total_chunks": {"type": "integer"},
+                    "file_hash": {"type": "keyword"},
+                    "timestamp": {"type": "date"}
+                }
+            },
+            'patent': {
+                "properties": {
+                    "title": {"type": "text"},
+                    "inventors": {"type": "keyword"},
+                    "assignee": {"type": "keyword"},
+                    "patent_number": {"type": "keyword"},
+                    "filing_date": {"type": "date"},
+                    "publication_date": {"type": "date"},
+                    "abstract": {"type": "text"},
+                    "classification": {"type": "keyword"},
+                    "claims": {"type": "text"},
+                    "content": {"type": "text"},
+                    "chunk_index": {"type": "integer"},
+                    "total_chunks": {"type": "integer"},
+                    "file_hash": {"type": "keyword"},
+                    "timestamp": {"type": "date"}
+                }
+            }
+        }
 
     def connect(self) -> bool:
         """Establish connection to OpenSearch"""
@@ -47,25 +160,18 @@ class OpenSearchUploader:
             self.console.print(f"[red]Failed to connect to OpenSearch: {str(e)}[/red]")
             return False
 
-    def create_index_if_not_exists(self):
-        """Create index with appropriate mappings for text search"""
-        if not self.client.indices.exists(index=OPENSEARCH_INDEX):
-            mappings = {
-                "mappings": {
-                    "properties": {
-                        "title": {"type": "text"},
-                        "authors": {"type": "keyword"},
-                        "publication_year": {"type": "integer"},
-                        "file_hash": {"type": "keyword"},
-                        "doc_type": {"type": "keyword"},
-                        "timestamp": {"type": "date"},
-                        "content": {"type": "text"},
-                        "chunk_index": {"type": "integer"},
-                        "total_chunks": {"type": "integer"}
-                    }
-                }
-            }
-            self.client.indices.create(index=OPENSEARCH_INDEX, body=mappings)
+    def get_index_name(self, doc_type: str) -> str:
+        """Get the index name for a document type"""
+        return f"{self.index_prefix}_{doc_type.lower()}"
+
+    def create_index_if_not_exists(self, doc_type: str):
+        """Create index with appropriate mappings for document type"""
+        index_name = self.get_index_name(doc_type)
+        if not self.client.indices.exists(index=index_name):
+            self.client.indices.create(
+                index=index_name,
+                body={"mappings": self.mappings[doc_type.lower()]}
+            )
 
     def chunk_text(self, text: str) -> List[str]:
         """Split text into overlapping chunks"""
@@ -103,38 +209,42 @@ class OpenSearchUploader:
                 return False
 
         try:
-            # Create index with proper mappings if it doesn't exist
-            self.create_index_if_not_exists()
-
+            # Determine document type based on metadata class
+            doc_type = metadata.__class__.__name__.lower().replace('metadata', '')
+            
+            # Create index if it doesn't exist
+            self.create_index_if_not_exists(doc_type)
+            
             # Split text into chunks
             chunks = self.chunk_text(ocr_text)
             total_chunks = len(chunks)
 
+            # Prepare base document with all metadata fields
+            base_document = metadata.model_dump(exclude_none=True)
+            base_document.update({
+                'file_hash': file_hash,
+                'timestamp': datetime.now().isoformat(),
+            })
+
             # Upload each chunk as a separate document
+            index_name = self.get_index_name(doc_type)
             for i, chunk in enumerate(chunks):
-                document = {
-                    'title': metadata.title,
-                    'authors': metadata.authors,
-                    'publication_year': metadata.publication_year,
-                    'file_hash': file_hash,
-                    'doc_type': 'Book' if hasattr(metadata, 'isbn') else 'Paper',
-                    'timestamp': datetime.now().isoformat(),
+                # Add chunk-specific fields
+                document = base_document.copy()
+                document.update({
                     'content': chunk,
                     'chunk_index': i,
                     'total_chunks': total_chunks
-                }
-                
-                if hasattr(metadata, 'isbn'):
-                    document['isbn'] = metadata.isbn
+                })
 
                 response = self.client.index(
-                    index=OPENSEARCH_INDEX,
+                    index=index_name,
                     body=document,
                     id=f"{file_hash}_{i}",
                     refresh=True
                 )
 
-            self.console.print(f"[green]Document indexed successfully in {total_chunks} chunks[/green]")
+            self.console.print(f"[green]Document indexed successfully in {total_chunks} chunks to {index_name}[/green]")
             return True
         except OpenSearchException as e:
             self.console.print(f"[red]OpenSearch indexing error: {str(e)}[/red]")

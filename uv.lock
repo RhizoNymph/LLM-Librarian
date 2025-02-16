@@ -388,7 +388,7 @@ wheels = [
 ]
 
 [[package]]
-name = "librarian-agent"
+name = "llm-librarian"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

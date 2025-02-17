@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Union
 import json
 import hashlib
 
-import fitz  # PyMuPDF
+import fitz  
 import pytesseract
 from PIL import Image
 import numpy as np
@@ -166,14 +166,10 @@ class PDFProcessor:
             doc = fitz.open(str(pdf_path))
             print(f"PDF opened successfully. Total pages: {len(doc)}")
             images = []
-            
-            # If extended_search is True, look at more pages for specific content
-            if extended_search:
-                # Look at first 10 pages for main metadata
-                main_pages = list(range(min(10, len(doc))))
-                # Look at references/bibliography pages near the end
-                end_pages = list(range(max(0, len(doc)-5), len(doc)))
-                # Look at some middle pages for content analysis
+                        
+            if extended_search:                
+                main_pages = list(range(min(10, len(doc))))                
+                end_pages = list(range(max(0, len(doc)-5), len(doc)))                
                 middle_pages = list(range(10, min(20, len(doc))))
                 pages_to_process = sorted(set(main_pages + middle_pages + end_pages))
             else:
@@ -207,14 +203,10 @@ class PDFProcessor:
         print("\nStarting parallel OCR process...")
         text_chunks = []
         
-        try:
-            # Create a process pool for parallel OCR
-            with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
-                # Process images in parallel
+        try:            
+            with ProcessPoolExecutor(max_workers=self.max_workers) as executor:                
                 print(f"Processing {len(images)} images with {self.max_workers} workers")
-                results = list(executor.map(self._process_image_ocr, images))
-                
-                # Filter and collect results
+                results = list(executor.map(self._process_image_ocr, images))                                
                 text_chunks = [text for text in results if text]
                 print(f"Successfully processed {len(text_chunks)} images")
                 
@@ -229,28 +221,22 @@ class PDFProcessor:
     def determine_document_type(self, ocr_text: str) -> DocumentType:
         """Determine document type based on OCR text and structure"""
         text_lower = ocr_text.lower()
-        
-        # Patent indicators
+                
         if any(x in text_lower for x in ["patent", "claims:", "inventors:", "assignee:"]):
             return DocumentType.PATENT
-        
-        # Thesis indicators
+                
         if any(x in text_lower for x in ["thesis", "dissertation", "submitted in partial fulfillment"]):
             return DocumentType.THESIS
-        
-        # Technical report indicators
+                
         if any(x in text_lower for x in ["technical report", "tr-", "executive summary"]):
             return DocumentType.TECHNICAL_REPORT
-        
-        # Blog article indicators
+                
         if any(x in text_lower for x in ["posted on", "reading time:", "originally published at"]):
             return DocumentType.BLOG_ARTICLE
-        
-        # Academic paper indicators
+                
         if any(x in text_lower for x in ["abstract", "doi:", "journal", "conference"]):
             return DocumentType.PAPER
-        
-        # Book indicators (default if no other type matches)
+                
         return DocumentType.BOOK
 
 metadata_agent = Agent(
@@ -280,12 +266,10 @@ async def process_pdf(pdf_path: Path) -> None:
         
         if not pdf_path.exists():
             raise FileNotFoundError(f"PDF file not found: {pdf_path}")
-
-        # Calculate file hash
+        
         file_hash = processor.calculate_file_hash(pdf_path)
         print(f"File hash: {file_hash}")
-
-        # Check if already processed
+        
         if processor.is_processed(file_hash):
             print(f"File already processed: {pdf_path}")
             return
@@ -317,8 +301,7 @@ async def process_pdf(pdf_path: Path) -> None:
             deps=context
         )
         
-        print(f"\nStep 6: Saving results")
-        # Add to metadata store
+        print(f"\nStep 6: Saving results")        
         processor.metadata_store.documents[file_hash] = result.data
         processor.metadata_store.last_updated = datetime.utcnow()
         processor._save_metadata_store()
@@ -330,5 +313,4 @@ async def process_pdf(pdf_path: Path) -> None:
         traceback.print_exc()
         raise
 
-# Add debug print at module level
 print("pdf_metadata_extractor.py loaded") 

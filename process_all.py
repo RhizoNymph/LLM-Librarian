@@ -11,11 +11,11 @@ from dotenv import load_dotenv
 import hashlib
 import base64
 import aiohttp
-import fitz  # PyMuPDF
+import fitz  
 
 load_dotenv()
 
-# Load environment variables with defaults
+
 OPENSEARCH_HOST = os.getenv('OPENSEARCH_HOST', 'localhost')
 OPENSEARCH_PORT = int(os.getenv('OPENSEARCH_PORT', '9200'))
 OPENSEARCH_USER = os.getenv('OPENSEARCH_USER', 'admin')
@@ -31,8 +31,7 @@ class OpenSearchUploader:
         self.chunk_size = 1000
         self.chunk_overlap = 200
         self.index_prefix = OPENSEARCH_INDEX
-        
-        # Define mappings for different document types
+                
         self.mappings = {
             'book': {
                 "properties": {
@@ -155,7 +154,7 @@ class OpenSearchUploader:
                 verify_certs=OPENSEARCH_VERIFY_CERTS,
                 ssl_show_warn=False
             )
-            # Test connection
+            
             self.client.info()
             return True
         except Exception as e:
@@ -180,26 +179,20 @@ class OpenSearchUploader:
         chunks = []
         start = 0
         
-        while start < len(text):
-            # Get chunk of text
+        while start < len(text):            
             end = start + self.chunk_size
-            
-            # If this isn't the last chunk, try to break at a period or space
-            if end < len(text):
-                # Look for a period in the last 100 characters of the chunk
+                        
+            if end < len(text):                
                 last_period = text[end-100:end].rfind('.')
                 if last_period != -1:
                     end = end - (100 - last_period)
-                else:
-                    # If no period, break at last space
+                else:                    
                     last_space = text[end-50:end].rfind(' ')
                     if last_space != -1:
                         end = end - (50 - last_space)
-            
-            # Add the chunk
+                        
             chunks.append(text[start:end].strip())
-            
-            # Move start position, including overlap
+                        
             start = end - self.chunk_overlap
         
         return chunks
@@ -210,28 +203,22 @@ class OpenSearchUploader:
             if not self.connect():
                 return False
 
-        try:
-            # Determine document type based on metadata class
+        try:            
             doc_type = metadata.__class__.__name__.lower().replace('metadata', '')
-            
-            # Create index if it doesn't exist
+                        
             self.create_index_if_not_exists(doc_type)
-            
-            # Split text into chunks
+                        
             chunks = self.chunk_text(ocr_text)
             total_chunks = len(chunks)
-
-            # Prepare base document with all metadata fields
+            
             base_document = metadata.model_dump(exclude_none=True)
             base_document.update({
                 'file_hash': file_hash,
                 'timestamp': datetime.now().isoformat(),
             })
-
-            # Upload each chunk as a separate document
+            
             index_name = self.get_index_name(doc_type)
-            for i, chunk in enumerate(chunks):
-                # Add chunk-specific fields
+            for i, chunk in enumerate(chunks):                
                 document = base_document.copy()
                 document.update({
                     'content': chunk,
@@ -260,24 +247,24 @@ class DwarfUploader:
     def __init__(self):
         self.host = os.getenv('DWARFINTHEFLASK_HOST', 'http://localhost:5000')
         self.console = Console()
-        # Increase timeout for large PDFs (30 minutes)
+        
         self.timeout = aiohttp.ClientTimeout(total=1800)
 
     async def upload_document(self, pdf_path: Path) -> bool:
         """Upload a PDF document to the Flask server"""
         try:
-            # Read PDF file as base64
+            
             with open(pdf_path, 'rb') as f:
                 pdf_content = base64.b64encode(f.read()).decode('utf-8')
 
-            # Prepare request data
+            
             data = {
                 'pdf_content': pdf_content,
                 'filename': pdf_path.name,
-                'index_name': 'universal'  # Default index name
+                'index_name': 'universal'  
             }
 
-            # Send request to server with increased timeout
+            
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
                 async with session.post(f"{self.host}/indexPDF", json=data) as response:
                     if response.status == 200:
@@ -302,11 +289,11 @@ async def process_single_pdf(pdf_path: Path, uploaders: List[Union[OpenSearchUpl
             if isinstance(uploader, DwarfUploader):
                 success = await uploader.upload_document(pdf_path)
             else:
-                # OpenSearch processing
+                
                 with open(pdf_path, 'rb') as f:
                     file_hash = hashlib.sha256(f.read()).hexdigest()
                 
-                # Get metadata using PDFProcessor
+                
                 metadata = await process_pdf(pdf_path)
                 if metadata is None:
                     processor = PDFProcessor()
@@ -316,7 +303,7 @@ async def process_single_pdf(pdf_path: Path, uploaders: List[Union[OpenSearchUpl
                         success = False
                         continue
                 
-                # Extract full text using PyMuPDF
+                
                 print("\nExtracting full document text...")
                 full_text = ""
                 with fitz.open(pdf_path) as doc:
@@ -337,8 +324,7 @@ async def process_single_pdf(pdf_path: Path, uploaders: List[Union[OpenSearchUpl
             import traceback
             traceback.print_exc()
             successes.append(False)
-    
-    # Return True only if all uploaders succeeded
+        
     return all(successes)
 
 async def main():
@@ -359,8 +345,7 @@ async def main():
         return
         
     console.print(f"[green]Found {len(pdfs)} PDF files[/green]")
-    
-    # Initialize uploaders based on mode
+        
     mode = os.getenv('INDEX_MODE', 'both').lower()
     uploaders = []
     
@@ -393,8 +378,7 @@ async def main():
     for path, success in results:
         status = "[green]Success[/green]" if success else "[red]Failed[/red]"
         console.print(f"{path}: {status}")
-
-    # Only show OpenSearch summary if it was used
+    
     if any(isinstance(u, OpenSearchUploader) for u in uploaders):
         show_summary()
 
@@ -423,5 +407,5 @@ def show_summary():
     console.print(table)
 
 if __name__ == "__main__":
-    print("Starting main...")  # Debug line
+    print("Starting main...")  
     asyncio.run(main()) 

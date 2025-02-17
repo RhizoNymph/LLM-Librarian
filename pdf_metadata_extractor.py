@@ -159,21 +159,23 @@ class PDFProcessor:
         """Check if file has already been processed"""
         return file_hash in self.metadata_store.documents
 
-    def convert_pdf_to_images(self, pdf_path: Path, max_pages: int = 10, extended_search: bool = False) -> List[Image.Image]:
+    def convert_pdf_to_images(self, pdf_path: Path, all_pages: bool = True) -> List[Image.Image]:
         """Convert PDF pages to PIL Images"""
         print(f"\nStarting PDF conversion for: {pdf_path}")
         try:
             doc = fitz.open(str(pdf_path))
             print(f"PDF opened successfully. Total pages: {len(doc)}")
             images = []
-                        
-            if extended_search:                
+            
+            if all_pages:
+                pages_to_process = range(len(doc))
+                print("Processing all pages...")
+            else:                
                 main_pages = list(range(min(10, len(doc))))                
                 end_pages = list(range(max(0, len(doc)-5), len(doc)))                
                 middle_pages = list(range(10, min(20, len(doc))))
                 pages_to_process = sorted(set(main_pages + middle_pages + end_pages))
-            else:
-                pages_to_process = range(min(max_pages, len(doc)))
+                print(f"Processing partial pages: {pages_to_process}")
             
             for page_num in pages_to_process:
                 print(f"Converting page {page_num + 1}")
@@ -273,16 +275,28 @@ async def process_pdf(pdf_path: Path) -> None:
         if processor.is_processed(file_hash):
             print(f"File already processed: {pdf_path}")
             return
-            
-        print(f"\nStep 1: Converting PDF to images")
-        images = processor.convert_pdf_to_images(pdf_path)
-        if not images:
-            raise ValueError(f"No images extracted from PDF: {pdf_path}")
-            
-        print(f"\nStep 2: Performing OCR")
-        ocr_text = processor.perform_ocr(images)
-        if not ocr_text.strip():
-            raise ValueError(f"No text extracted from images: {pdf_path}")
+                    
+        try:
+            print(f"\nStep 1: Converting PDF to images (full document)")
+            images = processor.convert_pdf_to_images(pdf_path, all_pages=True)
+            if not images:
+                raise ValueError("No images extracted from PDF")
+                
+            print(f"\nStep 2: Performing OCR (full document)")
+            ocr_text = processor.perform_ocr(images)
+            if not ocr_text.strip():
+                raise ValueError("No text extracted from images")
+        except Exception as e:
+            print(f"Full document processing failed: {str(e)}")
+            print("Falling back to partial document processing...")
+                        
+            images = processor.convert_pdf_to_images(pdf_path, all_pages=False)
+            if not images:
+                raise ValueError(f"No images extracted from PDF: {pdf_path}")
+                
+            ocr_text = processor.perform_ocr(images)
+            if not ocr_text.strip():
+                raise ValueError(f"No text extracted from images: {pdf_path}")
             
         print(f"\nStep 3: Determining document type")
         doc_type = processor.determine_document_type(ocr_text)

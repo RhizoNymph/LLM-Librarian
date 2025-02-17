@@ -1,0 +1,3 @@
+[submodule "DwarfInTheFlask"]
+	path = DwarfInTheFlask
+	url = https://github.com/RhizoNymph/DwarfInTheFlask

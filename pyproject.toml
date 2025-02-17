@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "aiohttp>=3.11.12",
     "numpy>=2.2.2",
     "opencv-python>=4.11.0.86",
     "opensearch-py>=2.8.0",

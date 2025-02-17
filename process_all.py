@@ -6,10 +6,12 @@ from rich.console import Console
 from rich.table import Table
 from opensearchpy import OpenSearch, OpenSearchException
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Union
 from dotenv import load_dotenv
 import hashlib
 import base64
+import aiohttp
+import fitz  # PyMuPDF
 
 load_dotenv()
 
@@ -253,42 +255,91 @@ class OpenSearchUploader:
             self.console.print(f"[red]Unexpected error during indexing: {str(e)}[/red]")
             return False
 
-async def process_single_pdf(pdf_path: Path, uploader: OpenSearchUploader) -> bool:
-    """Process a single PDF file and upload its metadata"""
-    try:
-        # Compute file hash first
-        with open(pdf_path, 'rb') as f:
-            file_hash = hashlib.sha256(f.read()).hexdigest()
-            
-        # Process the PDF for metadata
-        metadata = await process_pdf(pdf_path)
-        if metadata is None:
-            # If file was already processed, try to get metadata from PDFProcessor
-            processor = PDFProcessor()
-            metadata = processor.metadata_store.get_by_hash(file_hash)
-            if metadata is None:
-                print(f"[red]Could not get metadata for {pdf_path}[/red]")
-                return False
-        
-        # Get OCR text from full document
-        processor = PDFProcessor()
-        print("\nProcessing full document for text extraction...")
-        # Set max_pages to None to process entire document
-        images = processor.convert_pdf_to_images(pdf_path, max_pages=None, extended_search=True)
-        ocr_text = processor.perform_ocr(images)
-        print(f"Extracted {len(ocr_text)} characters of text")
+class DwarfUploader:
+    """Uploader class for the Dwarf In The Flask server"""
+    def __init__(self):
+        self.host = os.getenv('DWARFINTHEFLASK_HOST', 'http://localhost:5000')
+        self.console = Console()
+        # Increase timeout for large PDFs (30 minutes)
+        self.timeout = aiohttp.ClientTimeout(total=1800)
+
+    async def upload_document(self, pdf_path: Path) -> bool:
+        """Upload a PDF document to the Flask server"""
+        try:
+            # Read PDF file as base64
+            with open(pdf_path, 'rb') as f:
+                pdf_content = base64.b64encode(f.read()).decode('utf-8')
+
+            # Prepare request data
+            data = {
+                'pdf_content': pdf_content,
+                'filename': pdf_path.name,
+                'index_name': 'universal'  # Default index name
+            }
+
+            # Send request to server with increased timeout
+            async with aiohttp.ClientSession(timeout=self.timeout) as session:
+                async with session.post(f"{self.host}/indexPDF", json=data) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        self.console.print(f"[green]Successfully uploaded {pdf_path.name} to DwarfInTheFlask[/green]")
+                        return True
+                    else:
+                        error_text = await response.text()
+                        self.console.print(f"[red]Failed to upload {pdf_path.name} to DwarfInTheFlask: {error_text}[/red]")
+                        return False
+
+        except Exception as e:
+            self.console.print(f"[red]Error uploading {pdf_path.name} to DwarfInTheFlask: {str(e)}[/red]")
+            return False
+
+async def process_single_pdf(pdf_path: Path, uploaders: List[Union[OpenSearchUploader, DwarfUploader]]) -> bool:
+    """Process a single PDF file and upload its metadata to all configured uploaders"""
+    successes = []
+    
+    for uploader in uploaders:
+        try:
+            if isinstance(uploader, DwarfUploader):
+                success = await uploader.upload_document(pdf_path)
+            else:
+                # OpenSearch processing
+                with open(pdf_path, 'rb') as f:
+                    file_hash = hashlib.sha256(f.read()).hexdigest()
                 
-        print(f"Successfully processed {pdf_path}")
+                # Get metadata using PDFProcessor
+                metadata = await process_pdf(pdf_path)
+                if metadata is None:
+                    processor = PDFProcessor()
+                    metadata = processor.metadata_store.get_by_hash(file_hash)
+                    if metadata is None:
+                        print(f"[red]Could not get metadata for {pdf_path}[/red]")
+                        success = False
+                        continue
+                
+                # Extract full text using PyMuPDF
+                print("\nExtracting full document text...")
+                full_text = ""
+                with fitz.open(pdf_path) as doc:
+                    total_pages = doc.page_count
+                    for page_num in range(total_pages):
+                        page = doc[page_num]                        
+                        full_text += page.get_text()
+                    print(f"processed {total_pages} pages")
+                
+                print(f"Extracted {len(full_text)} characters of text")
+                
+                success = await uploader.upload_document(metadata, file_hash, full_text)
             
-        # Upload to OpenSearch with OCR text
-        success = await uploader.upload_document(metadata, file_hash, ocr_text)
-        return success
+            successes.append(success)
             
-    except Exception as e:
-        print(f"[red]Failed to process {pdf_path}: {str(e)}[/red]")
-        import traceback
-        traceback.print_exc()
-        return False
+        except Exception as e:
+            print(f"[red]Failed to process {pdf_path}: {str(e)}[/red]")
+            import traceback
+            traceback.print_exc()
+            successes.append(False)
+    
+    # Return True only if all uploaders succeeded
+    return all(successes)
 
 async def main():
     console = Console()
@@ -297,12 +348,10 @@ async def main():
     pdf_dir = Path("./pdfs")
     console.print(f"Looking for PDFs in: {pdf_dir.absolute()}")
     
-    # Check if directory exists
     if not pdf_dir.exists():
         console.print(f"[yellow]Creating directory: {pdf_dir}[/yellow]")
         pdf_dir.mkdir(parents=True)
     
-    # Get list of PDFs
     pdfs = list(pdf_dir.glob("*.pdf"))
     
     if not pdfs:
@@ -311,27 +360,43 @@ async def main():
         
     console.print(f"[green]Found {len(pdfs)} PDF files[/green]")
     
-    # Initialize OpenSearch uploader
-    uploader = OpenSearchUploader()
-    if not uploader.connect():
-        console.print("[red]Failed to establish OpenSearch connection. Exiting...[/red]")
+    # Initialize uploaders based on mode
+    mode = os.getenv('INDEX_MODE', 'both').lower()
+    uploaders = []
+    
+    if mode in ['opensearch', 'both']:
+        opensearch = OpenSearchUploader()
+        if not opensearch.connect():
+            console.print("[red]Failed to establish OpenSearch connection.[/red]")
+            if mode == 'opensearch':
+                return
+        else:
+            uploaders.append(opensearch)
+            console.print("[blue]Using OpenSearch uploader[/blue]")
+    
+    if mode in ['dwarf', 'both']:
+        dwarf = DwarfUploader()
+        uploaders.append(dwarf)
+        console.print("[blue]Using DwarfInTheFlask uploader[/blue]")
+    
+    if not uploaders:
+        console.print("[red]No valid uploaders configured. Please set INDEX_MODE to 'opensearch', 'dwarf', or 'both'[/red]")
         return
 
-    # Process each PDF
     results = []
     for pdf_path in pdfs:
         console.print(f"\n[blue]Processing {pdf_path}[/blue]")
-        success = await process_single_pdf(pdf_path, uploader)
+        success = await process_single_pdf(pdf_path, uploaders)
         results.append((pdf_path, success))
 
-    # Show processing summary
     console.print("\n[bold]Processing Summary:[/bold]")
     for path, success in results:
         status = "[green]Success[/green]" if success else "[red]Failed[/red]"
         console.print(f"{path}: {status}")
 
-    # Show metadata summary
-    show_summary()
+    # Only show OpenSearch summary if it was used
+    if any(isinstance(u, OpenSearchUploader) for u in uploaders):
+        show_summary()
 
 def show_summary():
     """Show summary of processed documents"""

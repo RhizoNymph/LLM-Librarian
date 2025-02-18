@@ -12,9 +12,6 @@ from PIL import Image
 import numpy as np
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
-import multiprocessing
-from concurrent.futures import ProcessPoolExecutor
-from functools import partial
 
 class DocumentType(Enum):
     BOOK = "book"
@@ -122,12 +119,10 @@ class PDFProcessor:
         print("Initializing PDFProcessor...")
         self.pdf_dir = Path(pdf_dir)
         self.metadata_file = Path(metadata_file)
-        self.max_workers = max(1, multiprocessing.cpu_count() - 2)
-        print(f"Using {self.max_workers} workers for OCR")
+
         if not self.pdf_dir.exists():
             self.pdf_dir.mkdir(parents=True)
         self.metadata_store = self._load_metadata_store()
-
     def _load_metadata_store(self) -> MetadataStore:
         """Load or create metadata store"""
         if self.metadata_file.exists():
@@ -159,35 +154,41 @@ class PDFProcessor:
         """Check if file has already been processed"""
         return file_hash in self.metadata_store.documents
 
-    def convert_pdf_to_images(self, pdf_path: Path, all_pages: bool = True) -> List[Image.Image]:
-        """Convert PDF pages to PIL Images"""
-        print(f"\nStarting PDF conversion for: {pdf_path}")
+    def extract_text_from_pdf(self, pdf_path: Path, all_pages: bool = True) -> str:
+        """Extract text from PDF using PyMuPDF and OCR for first page"""
+        print(f"\nStarting text extraction for: {pdf_path}")
         try:
             doc = fitz.open(str(pdf_path))
             print(f"PDF opened successfully. Total pages: {len(doc)}")
-            images = []
-            
+                        
+            print("Processing first page with OCR...")
+            first_page = doc[0]
+            pix = first_page.get_pixmap(matrix=fitz.Matrix(2, 2))
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            first_page_text = self._process_image_ocr(img)
+                        
             if all_pages:
-                pages_to_process = range(len(doc))
-                print("Processing all pages...")
+                pages_to_process = range(1, len(doc))
+                print("Processing remaining pages with PyMuPDF...")
             else:                
-                main_pages = list(range(min(10, len(doc))))                
-                end_pages = list(range(max(0, len(doc)-5), len(doc)))                
+                main_pages = list(range(1, min(10, len(doc))))
+                end_pages = list(range(max(1, len(doc)-5), len(doc)))
                 middle_pages = list(range(10, min(20, len(doc))))
                 pages_to_process = sorted(set(main_pages + middle_pages + end_pages))
-                print(f"Processing partial pages: {pages_to_process}")
+                print(f"Processing partial pages with PyMuPDF: {pages_to_process}")
             
+            remaining_text = []
             for page_num in pages_to_process:
-                print(f"Converting page {page_num + 1}")
+                print(f"Extracting text from page {page_num + 1}")
                 page = doc[page_num]
-                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-                img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                images.append(img)
+                remaining_text.append(page.get_text())
+                        
+            full_text = f"{first_page_text}\n" + "\n".join(remaining_text)
+            print(f"Successfully extracted text. Total length: {len(full_text)}")
+            return full_text
             
-            print(f"Successfully converted {len(images)} pages")
-            return images
         except Exception as e:
-            print(f"Error in convert_pdf_to_images: {str(e)}")
+            print(f"Error in extract_text_from_pdf: {str(e)}")
             raise
 
     def _process_image_ocr(self, img: Image.Image) -> str:
@@ -199,26 +200,6 @@ class PDFProcessor:
         except Exception as e:
             print(f"Error in OCR processing: {str(e)}")
             return ""
-
-    def perform_ocr(self, images: List[Image.Image]) -> str:
-        """Perform parallel OCR on list of images and return combined text"""
-        print("\nStarting parallel OCR process...")
-        text_chunks = []
-        
-        try:            
-            with ProcessPoolExecutor(max_workers=self.max_workers) as executor:                
-                print(f"Processing {len(images)} images with {self.max_workers} workers")
-                results = list(executor.map(self._process_image_ocr, images))                                
-                text_chunks = [text for text in results if text]
-                print(f"Successfully processed {len(text_chunks)} images")
-                
-            result = "\n".join(text_chunks)
-            print(f"OCR complete. Total text length: {len(result)}")
-            return result
-            
-        except Exception as e:
-            print(f"Error in parallel OCR: {str(e)}")
-            raise
 
     def determine_document_type(self, ocr_text: str) -> DocumentType:
         """Determine document type based on OCR text and structure"""
@@ -277,45 +258,36 @@ async def process_pdf(pdf_path: Path) -> None:
             return
                     
         try:
-            print(f"\nStep 1: Converting PDF to images (full document)")
-            images = processor.convert_pdf_to_images(pdf_path, all_pages=True)
-            if not images:
-                raise ValueError("No images extracted from PDF")
-                
-            print(f"\nStep 2: Performing OCR (full document)")
-            ocr_text = processor.perform_ocr(images)
-            if not ocr_text.strip():
-                raise ValueError("No text extracted from images")
+            print(f"\nStep 1: Extracting text from PDF (full document)")
+            text = processor.extract_text_from_pdf(pdf_path, all_pages=True)
+            if not text.strip():
+                raise ValueError("No text extracted from PDF")
         except Exception as e:
             print(f"Full document processing failed: {str(e)}")
             print("Falling back to partial document processing...")
-                        
-            images = processor.convert_pdf_to_images(pdf_path, all_pages=False)
-            if not images:
-                raise ValueError(f"No images extracted from PDF: {pdf_path}")
-                
-            ocr_text = processor.perform_ocr(images)
-            if not ocr_text.strip():
-                raise ValueError(f"No text extracted from images: {pdf_path}")
             
-        print(f"\nStep 3: Determining document type")
-        doc_type = processor.determine_document_type(ocr_text)
+            text = processor.extract_text_from_pdf(pdf_path, all_pages=False)
+            if not text.strip():
+                raise ValueError(f"No text extracted from PDF: {pdf_path}")
+            
+        print(f"\nStep 2: Determining document type")
+        doc_type = processor.determine_document_type(text)
         print(f"Detected document type: {doc_type}")
         
-        print(f"\nStep 4: Creating context for PydanticAI")
+        print(f"\nStep 3: Creating context for PydanticAI")
         context = PDFContext(
             pdf_path=pdf_path,
-            ocr_text=ocr_text,
+            ocr_text=text,  
             document_type=doc_type
         )
         
-        print(f"\nStep 5: Running metadata extraction")
+        print(f"\nStep 4: Running metadata extraction")
         result = await metadata_agent.run(
             "Extract all available metadata from this document.",
             deps=context
         )
         
-        print(f"\nStep 6: Saving results")        
+        print(f"\nStep 5: Saving results")        
         processor.metadata_store.documents[file_hash] = result.data
         processor.metadata_store.last_updated = datetime.utcnow()
         processor._save_metadata_store()

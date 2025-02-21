@@ -34,6 +34,7 @@ class BookMetadata(BaseModel):
     language: Optional[str] = Field(description="Primary language of the book")
     subject_areas: List[str] = Field(description="Main subject areas or categories")
     table_of_contents: Optional[List[str]] = Field(description="Main chapter titles")
+    citations: Optional[List[str]] = Field(description="Citations")
 
 class PaperMetadata(BaseModel):
     """Metadata schema for academic papers"""
@@ -114,6 +115,35 @@ class MetadataStore(BaseModel):
         """Get metadata for a file by its hash"""
         return self.documents.get(file_hash)
 
+document_type_agent = Agent(
+    'google-gla:gemini-2.0-flash',
+    result_type=DocumentType,
+    system_prompt="""
+    You are a document classification specialist. Analyze the text from a document and determine its type.
+    Choose from the following categories:
+    - BOOK: Books, textbooks, manuals (typically have chapters, table of contents, publisher info)
+    - PAPER: Academic papers, research articles, conference papers (have abstract, citations, academic formatting)
+    - BLOG_ARTICLE: Blog posts, online articles (informal, web-focused)
+    - TECHNICAL_REPORT: Technical reports, white papers (formal reports from organizations)
+    - THESIS: PhD theses, Masters dissertations (long-form academic work)
+    - PATENT: Patent documents (legal format, claims)
+    - PRESENTATION: Slides, presentations (bullet points, visual focus)
+    - DOCUMENTATION: Software documentation, API docs (technical reference material)
+    
+    Pay special attention to:
+    - Document structure and formatting
+    - Presence of abstract, citations, or references
+    - Academic vs commercial tone
+    - Length and depth of content
+    - Section organization
+    """
+)
+
+@document_type_agent.tool
+async def get_document_sample(ctx: RunContext, text: str) -> str:
+    """Get a representative sample of the document text for classification"""
+    return text
+
 class PDFProcessor:
     def __init__(self, pdf_dir: str = "./pdfs", metadata_file: str = "./pdf_metadata.json"):
         print("Initializing PDFProcessor...")
@@ -179,7 +209,7 @@ class PDFProcessor:
             
             remaining_text = []
             for page_num in pages_to_process:
-                print(f"Extracting text from page {page_num + 1}")
+                
                 page = doc[page_num]
                 remaining_text.append(page.get_text())
                         
@@ -201,36 +231,41 @@ class PDFProcessor:
             print(f"Error in OCR processing: {str(e)}")
             return ""
 
-    def determine_document_type(self, ocr_text: str) -> DocumentType:
-        """Determine document type based on OCR text and structure"""
-        text_lower = ocr_text.lower()
-                
-        if any(x in text_lower for x in ["patent", "claims:", "inventors:", "assignee:"]):
-            return DocumentType.PATENT
-                
-        if any(x in text_lower for x in ["thesis", "dissertation", "submitted in partial fulfillment"]):
-            return DocumentType.THESIS
-                
-        if any(x in text_lower for x in ["technical report", "tr-", "executive summary"]):
-            return DocumentType.TECHNICAL_REPORT
-                
-        if any(x in text_lower for x in ["posted on", "reading time:", "originally published at"]):
-            return DocumentType.BLOG_ARTICLE
-                
-        if any(x in text_lower for x in ["abstract", "doi:", "journal", "conference"]):
+    async def determine_document_type(self, ocr_text: str) -> DocumentType:
+        """Determine document type using LLM"""
+        # Get a representative sample (first ~2000 chars should be enough for classification)
+        text_sample = ocr_text[:2000]
+        
+        try:
+            # Pass the text sample as the prompt
+            result = await document_type_agent.run(text_sample)
+            return result.data
+        except Exception as e:
+            print(f"Error in document type detection: {str(e)}")
+            # Fallback to PAPER as default if LLM fails
             return DocumentType.PAPER
-                
-        return DocumentType.BOOK
 
 metadata_agent = Agent(
     'google-gla:gemini-2.0-flash',
     deps_type=PDFContext,
     result_type=BookMetadata | PaperMetadata | BlogArticleMetadata | TechnicalReportMetadata | ThesisMetadata | PatentMetadata,
     system_prompt="""
-    You are a metadata extraction specialist. Analyze the OCR text from the first 10 pages 
-    of a PDF document and extract relevant metadata based on the document type (book or paper).
-    Be thorough but do not make up information - if a field cannot be determined from the 
-    provided text, leave it as None.
+    You are a metadata extraction specialist. Analyze the OCR text from a PDF document and extract relevant metadata based on the document type.
+    Be thorough but do not make up information - if a field cannot be determined from the provided text, leave it as None.
+
+    For citations:
+    - For books: Look for references or bibliography sections, typically found at the end of chapters or the book
+    - Look for in-text citations in formats like (Author, Year) or [1]
+    - Check for footnotes that contain references
+    - For academic papers: Focus on the references section and first-page citations
+    - Extract up to 10 most relevant citations if many are present
+    - Preserve the original citation format when possible
+
+    Pay special attention to:
+    - Title pages and copyright pages for basic metadata
+    - Table of contents for books
+    - Front matter sections containing metadata
+    - Back matter including references and bibliographies
     """
 )
 
@@ -259,6 +294,7 @@ async def process_pdf(pdf_path: Path) -> None:
                     
         try:
             print(f"\nStep 1: Extracting text from PDF (full document)")
+            # Always try full document first for better citation extraction
             text = processor.extract_text_from_pdf(pdf_path, all_pages=True)
             if not text.strip():
                 raise ValueError("No text extracted from PDF")
@@ -271,7 +307,7 @@ async def process_pdf(pdf_path: Path) -> None:
                 raise ValueError(f"No text extracted from PDF: {pdf_path}")
             
         print(f"\nStep 2: Determining document type")
-        doc_type = processor.determine_document_type(text)
+        doc_type = await processor.determine_document_type(text)
         print(f"Detected document type: {doc_type}")
         
         print(f"\nStep 3: Creating context for PydanticAI")

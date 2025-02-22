@@ -5,7 +5,11 @@ This is a repo for using LLMs as a librarian to classify documents and extract t
 This will be used as the base of a larger RAG system that search and research agents use as their knowledge store.
 
 To run this:
-Set your GEMINI_API_KEY environment variable (or other api key that is supported by PydanticAI)
+Set your GEMINI_API_KEY environment variable (or other api key that is supported by PydanticAI, but then you need to change the model its using)
+
+Set your opensearch environment variables.
+
+Run opensearch with docker-compose up -d wherever you place docker-compose.yaml (I run this on a separate computer)
 
 (I usually run tmux here)
 

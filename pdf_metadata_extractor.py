@@ -178,8 +178,7 @@ class PDFProcessor:
                 print(f"Processing partial pages with PyMuPDF: {pages_to_process}")
             
             remaining_text = []
-            for page_num in pages_to_process:
-                print(f"Extracting text from page {page_num + 1}")
+            for page_num in pages_to_process:                
                 page = doc[page_num]
                 remaining_text.append(page.get_text())
                         
@@ -201,26 +200,70 @@ class PDFProcessor:
             print(f"Error in OCR processing: {str(e)}")
             return ""
 
-    def determine_document_type(self, ocr_text: str) -> DocumentType:
-        """Determine document type based on OCR text and structure"""
-        text_lower = ocr_text.lower()
-                
-        if any(x in text_lower for x in ["patent", "claims:", "inventors:", "assignee:"]):
-            return DocumentType.PATENT
-                
-        if any(x in text_lower for x in ["thesis", "dissertation", "submitted in partial fulfillment"]):
-            return DocumentType.THESIS
-                
-        if any(x in text_lower for x in ["technical report", "tr-", "executive summary"]):
-            return DocumentType.TECHNICAL_REPORT
-                
-        if any(x in text_lower for x in ["posted on", "reading time:", "originally published at"]):
-            return DocumentType.BLOG_ARTICLE
-                
-        if any(x in text_lower for x in ["abstract", "doi:", "journal", "conference"]):
-            return DocumentType.PAPER
-                
-        return DocumentType.BOOK
+    async def determine_document_type(self, ocr_text: str) -> DocumentType:
+        """Determine document type using LLM"""
+        print("Using LLM to determine document type...")
+        try:
+            # Get a representative sample (first ~2000 chars should be enough for classification)
+            text_sample = ocr_text[:2000]
+            
+            result = await document_type_agent.run(text_sample)
+            print(f"LLM detected document type: {result.data}")
+            return result.data
+            
+        except Exception as e:
+            print(f"Error in LLM document type detection: {str(e)}")
+            print("Falling back to heuristic detection...")
+            
+            # Fallback to basic heuristics if LLM fails
+            text_lower = ocr_text.lower()
+            
+            if any(x in text_lower for x in ["patent", "claims:", "inventors:", "assignee:"]):
+                return DocumentType.PATENT
+                    
+            if any(x in text_lower for x in ["thesis", "dissertation", "submitted in partial fulfillment"]):
+                return DocumentType.THESIS
+                    
+            if any(x in text_lower for x in ["technical report", "tr-", "executive summary"]):
+                return DocumentType.TECHNICAL_REPORT
+                    
+            if any(x in text_lower for x in ["posted on", "reading time:", "originally published at"]):
+                return DocumentType.BLOG_ARTICLE
+                    
+            if any(x in text_lower for x in ["abstract", "doi:", "journal", "conference"]):
+                return DocumentType.PAPER
+                    
+            return DocumentType.BOOK
+
+document_type_agent = Agent(
+    'google-gla:gemini-2.0-flash',
+    result_type=DocumentType,
+    system_prompt="""
+    You are a document classification specialist. Analyze the text from a document and determine its type.
+    Choose from the following categories:
+    - BOOK: Books, textbooks, manuals (typically have chapters, table of contents, publisher info)
+    - PAPER: Academic papers, research articles, conference papers (have abstract, citations, academic formatting)
+    - BLOG_ARTICLE: Blog posts, online articles (informal, web-focused)
+    - TECHNICAL_REPORT: Technical reports, white papers (formal reports from organizations)
+    - THESIS: PhD theses, Masters dissertations (long-form academic work)
+    - PATENT: Patent documents (legal format, claims)
+    - PRESENTATION: Slides, presentations (bullet points, visual focus)
+    - DOCUMENTATION: Software documentation, API docs (technical reference material)
+    
+    Pay special attention to:
+    - Document structure and formatting
+    - Presence of abstract, citations, or references
+    - Academic vs commercial tone
+    - Length and depth of content
+    - Section organization
+    """
+)
+
+@document_type_agent.tool
+async def get_document_sample(ctx: RunContext, text: str) -> str:
+    """Get a representative sample of the document text for classification"""
+    # Take first 2000 chars as sample
+    return text[:2000]
 
 metadata_agent = Agent(
     'google-gla:gemini-2.0-flash',
@@ -271,7 +314,7 @@ async def process_pdf(pdf_path: Path) -> None:
                 raise ValueError(f"No text extracted from PDF: {pdf_path}")
             
         print(f"\nStep 2: Determining document type")
-        doc_type = processor.determine_document_type(text)
+        doc_type = await processor.determine_document_type(text)
         print(f"Detected document type: {doc_type}")
         
         print(f"\nStep 3: Creating context for PydanticAI")

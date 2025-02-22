@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "last_updated": "2025-02-18T06:51:56.459149",
+  "last_updated": "2025-02-22T02:22:22.335783",
   "documents": {
     "546b28e9f080d7545b921ba212e6ca72e99e0a2bda04d0ff2a6f075ca2e092c6": {
       "title": "MATRIX FACTORIZATION TECHNIQUES FOR RECOMMENDER SYSTEMS",
@@ -9,7 +9,7 @@
         "Chris Volinsky",
         "Yehuda Koren"
       ],
-      "abstract": "As the Netflix Prize competition has dem- onstrated, matrix factorization models are superior to classic nearest-neighbor techniques for producing product recom- mendations, allowing the incorporation of additional information such as implicit feedback, temporal effects, and confidence levels.",
+      "abstract": "As the Netflix Prize competition has dem-\nonstrated, matrix factorization models\nare superior to classic nearest-neighbor\ntechniques for producing product recom-\nmendations, allowing the incorporation\nof additional information such as implicit\nfeedback, temporal effects, and confidence\nlevels.",
       "keywords": [
         "matrix factorization",
         "recommender systems",
@@ -21,20 +21,7 @@
       "conference": null,
       "publication_year": 2009,
       "institution": "AT&T Labs—Research, Yahoo Research",
-      "citations": [
-        "D. Goldberg et al., “Using Col- \n\n\nlaborative Filtering to Weave  \n\n\nan Information Tapestry,”  \n\n\nComm. ACM, vol. 35, 1992, pp.  \n\n\n61-70.",
-        "B.M. Sarwar et al., “Application of Dimensionality Reduc- tion in Recommender System—A Case Study,” Proc. KDD \nWorkshop on Web Mining for e-Commerce: Challenges and \nOpportunities (WebKDD), ACM Press, 2000.",
-        "S. Funk, “Netflix Update: Try This at Home,” Dec. 2006; \nhttp://sifter.org/~simon/journal/20061211.html.",
-        "Y. Koren, “Factorization Meets the Neighborhood: A Mul- tifaceted Collaborative Filtering Model,” Proc. 14th ACM \nSIGKDD Int’l Conf. Knowledge Discovery and Data Mining, \nACM Press, 2008, pp. 426-434.",
-        "A. Paterek, “Improving Regularized Singular Value De- composition for Collaborative Filtering,” Proc. KDD Cup \nand Workshop, ACM Press, 2007, pp. 39-42.",
-        "G. Takács et al., “Major Components of the Gravity Recom- mendation System,” SIGKDD Explorations, vol. 9, 2007, pp. \n80-84.",
-        "R. Salakhutdinov and A. Mnih, “Probabilistic Matrix Fac- torization,” Proc. Advances in Neural Information Processing \nSystems 20 (NIPS 07), ACM Press, 2008, pp. 1257-1264.",
-        "R. Bell and Y. Koren, “Scalable Collaborative Filtering with \nJointly Derived Neighborhood Interpolation Weights,” Proc. \nIEEE Int’l Conf. Data Mining (ICDM 07), IEEE CS Press, 2007, \npp. 43-52.",
-        "Y. Zhou et al., “Large-Scale Parallel Collaborative Filter- ing for the Netflix Prize,” Proc. 4th Int’l Conf. Algorithmic \nAspects in Information and Management, LNCS 5034, \nSpringer, 2008, pp. 337-348.",
-        "Y.F. Hu, Y. Koren, and C. Volinsky, “Collaborative Filtering \nfor Implicit Feedback Datasets,” Proc. IEEE Int’l Conf. Data \nMining (ICDM 08), IEEE CS Press, 2008, pp. 263-272.",
-        "Y. Koren, “Collaborative Filtering with Temporal Dynam- nics,” Proc. 15th ACM SIGKDD Int’l Conf. Knowledge Discovery \nand Data Mining (KDD 09), ACM Press, 2009, pp. 447-455.",
-        "J. Bennet and S. Lanning, “The Netflix Prize,” KDD Cup and \nWorkshop, 2007; www.netflixprize.com"
-      ]
+      "citations": []
     },
     "705abab10da25c4a3a05604df7614a8cdea434acca9b579848b28b5e0f5b305b": {
       "title": "A First Course in Monte Carlo Methods",
@@ -45,8 +32,9 @@
       "abstract": "This is a concise mathematical introduction to Monte Carlo methods, a rich family\nof algorithms with far-reaching applications in science and engineering. Monte Carlo methods\nare an exciting subject for mathematical statisticians and computational and applied mathemati-\ncians: the design and analysis of modern algorithms are rooted in a broad mathematical toolbox\nthat includes ergodic theory of Markov chains, Hamiltonian dynamical systems, transport maps,\nstochastic differential equations, information theory, optimization, Riemannian geometry, and\ngradient flows, among many others. These lecture notes celebrate the breadth of mathematical\nideas that have led to tangible advancements in Monte Carlo methods and their applications. To\naccommodate a diverse audience, the level of mathematical rigor varies from chapter to chapter,\ngiving only an intuitive treatment to the most technically demanding subjects. The aim is not to\nbe comprehensive or encyclopedic, but rather to illustrate some key principles in the design and\nanalysis of Monte Carlo methods through a carefully-crafted choice of topics that emphasizes\ntimeless over timely ideas. Algorithms are presented in a way that is conducive to conceptual\nunderstanding and mathematical analysis —clarity and intuition are favored over state-of-the-art\nimplementations that are harder to comprehend or rely on ad-hoc heuristics. To help readers\nnavigate the expansive landscape of Monte Carlo methods, each algorithm is accompanied by a\nsummary of its pros and cons, and by a discussion of the type of problems for which they are\nmost useful. The presentation is self-contained, and therefore adequate for self-guided learning\nor as a teaching resource. Each chapter contains a section with bibliographic remarks that will\nbe useful for computational scientists and graduate students interested in conducting research on\nMonte Carlo methods and their applications.",
       "keywords": [
         "Monte Carlo methods",
-        "algorithms",
-        "ergodic theory",
+        "mathematical statistics",
+        "computational mathematics",
+        "applied mathematics",
         "Markov chains",
         "Hamiltonian dynamical systems",
         "transport maps",
@@ -64,19 +52,16 @@
       "citations": []
     },
     "d1228fdf6f9a1aef0d3f80572612da011d928705d709464f73d0e1a9c9d356d0": {
-      "title": "The Anthropocene Reviewed: Essays on a Human-Centered Planet",
+      "title": "THE ANTHROPOCENE REVIEWED",
       "authors": [
         "John Green"
       ],
-      "publisher": "Dutton",
+      "publisher": "DUTTON",
       "publication_year": 2021,
       "isbn": "9780525555216",
       "edition": null,
       "language": "en",
-      "subject_areas": [
-        "Essays",
-        "Personal Development"
-      ],
+      "subject_areas": [],
       "table_of_contents": [
         "Introduction",
         "“You’ll Never Walk Alone”",

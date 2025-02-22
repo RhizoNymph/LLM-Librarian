@@ -6,8 +6,15 @@ This will be used as the base of a larger RAG system that search and research ag
 
 To run this:
 Set your GEMINI_API_KEY environment variable (or other api key that is supported by PydanticAI)
+
+(I usually run tmux here)
+
 cd DwarfInTheFlask
+
 uv run flask_server.py
+
+Navigate back to root (or exit tmux)
+
 uv run process_all.py
 
 NOTES:

@@ -22,6 +22,9 @@ Navigate back to root (or exit tmux)
 uv run process_all.py
 
 NOTES:
+
 -This uses OCR on the first page of the document to increase reliability of title extraction for books, which sometimes aren't actually included in the text of the PDF.
+
 -Metadata extraction will fall back on using a partial page set if something goes wrong with using the full pdf, such as context lengths for the LLM. By default it uses gemini to avoid this issue, but I want it to not rely on Gemini.
+
 -Chunk text extraction for OpenSearch indexing uses PyMuPDF. This is separate from the OCR text because when using partial pages for metadata extraction it needs to make sure to use all the text for chunk indexing.
